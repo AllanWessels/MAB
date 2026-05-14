@@ -1,0 +1,6 @@
+gen/
+.git/
+.gitignore
+README.md
+Makefile
+*.md

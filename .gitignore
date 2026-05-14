@@ -1,0 +1,6 @@
+/gen/
+/bin/
+*.test
+*.out
+.env
+.DS_Store

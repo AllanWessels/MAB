@@ -1,0 +1,30 @@
+services:
+  dynamodb:
+    image: amazon/dynamodb-local:2.5.2
+    container_name: mab-dynamodb
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    ports:
+      - "8000:8000"
+    healthcheck:
+      # DynamoDB Local has no /health endpoint; ListTables on the port is the
+      # canonical liveness probe.
+      test: ["CMD-SHELL", "curl -s http://localhost:8000/ | grep -q DynamoDB || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mab:
+    build: .
+    container_name: mab-server
+    depends_on:
+      dynamodb:
+        condition: service_started
+    environment:
+      GRPC_ADDR: ":50051"
+      DDB_TABLE: "bandit_state"
+      DDB_ENDPOINT: "http://dynamodb:8000"
+      AWS_REGION: "us-east-1"
+      AWS_ACCESS_KEY_ID: "local"
+      AWS_SECRET_ACCESS_KEY: "local"
+    ports:
+      - "50051:50051"

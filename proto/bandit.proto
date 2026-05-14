@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package mab.v1;
+
+option go_package = "mab/gen/mabpb;mabpb";
+
+// BanditService runs a per-experiment multi-armed bandit. Pull is a single
+// round-trip that records the reward observed for the previously-chosen
+// channel and returns the next channel to use.
+service BanditService {
+  rpc Pull(PullRequest) returns (PullResponse);
+}
+
+enum AlgoType {
+  ALGO_UNSPECIFIED = 0;
+  ALGO_UCB = 1;
+  ALGO_EPSILON_GREEDY = 2;
+  ALGO_EPSILON_DECAY = 3;
+}
+
+// AlgoParams carries algorithm-specific hyperparameters. Only the field for
+// the chosen algo_type is consulted by the server.
+message AlgoParams {
+  // UCB exploration constant c in arg max mean + c*sqrt(ln(N)/n_i). Default 1.414.
+  double ucb_c = 1;
+
+  // EpsilonGreedy: probability of exploration. Default 0.1.
+  double epsilon = 2;
+
+  // EpsilonDecay: epsilon at pull t is min(1, decay_rate / t). Default 1.0.
+  // Set decay_rate=K to get the classic 1/t schedule scaled by K.
+  double decay_rate = 3;
+}
+
+message PullRequest {
+  string experiment_id = 1;
+  AlgoType algo_type = 2;
+  AlgoParams parameters = 3;
+
+  // The channel pulled in the *previous* round and the reward observed for it.
+  // For the very first call in an experiment, leave channel_chosen unset
+  // (or set has_prior=false) and the server will only select.
+  int32 channel_chosen = 4;
+  double value_from_channel = 5;
+  bool has_prior = 6;
+
+  // Optional: bias the selector to consider these channels. If empty, the
+  // bandit may pick any channel it has seen (and will pick channel_chosen
+  // again on the very first call if no other arms are known).
+  repeated int32 candidate_channels = 7;
+}
+
+message PullResponse {
+  int32 next_channel_to_use = 1;
+  // Posterior counts for transparency / debugging.
+  int64 total_pulls = 2;
+  int64 arm_pulls = 3;
+  double arm_mean = 4;
+}
