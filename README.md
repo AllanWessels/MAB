@@ -1,4 +1,4 @@
-# mab — multi-armed bandit service
+# mab — multi-armed bandit service (scaled down from production/private)
 
 A small Go + gRPC service that solves the classical **multi-armed bandit**
 problem: given a set of channels (arms), each with an unknown reward
